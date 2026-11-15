@@ -1,2 +1,3 @@
-# FarmWise
-Smart agriculture project for NASA Space Apps Challenge
+# farmwise
+
+A new Flutter project.
