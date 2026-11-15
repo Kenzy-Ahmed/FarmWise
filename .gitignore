@@ -20,3 +20,6 @@ Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Detailed.csv
 Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Final.csv
 
 Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Summary.csv
+
+# Tests
+.pytest_cache/

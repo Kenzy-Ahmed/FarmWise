@@ -2,10 +2,11 @@
 from pathlib import Path
 import sys
 
-BASE_DIR = Path(r"G:\FarmWise\Data")
+# Resolve paths relative to the repository so the script runs anywhere
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 DATASET_PATH = (
-    BASE_DIR / "Merged_Data" /
+    BASE_DIR / "Processed_Data" /
     "FarmWise_Unified_Dataset.csv"
 )
 
