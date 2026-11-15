@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from app.api.routes import climate, crops, dashboard, meta, soil, vegetation
+from app.api.routes import climate, crops, dashboard, insights, meta, soil, vegetation
 from app.core.config import get_settings
 from app.data.store import get_store
 
@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for r in (meta, climate, soil, vegetation, crops, dashboard):
+    for r in (meta, dashboard, insights, climate, soil, vegetation, crops):
         app.include_router(r.router, prefix=settings.api_prefix)
 
     @app.get("/", include_in_schema=False)

@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import store
 from app.data.store import DataStore
-from app.services import climate, recommendations, soil, vegetation
+from app.core.config import get_settings
+from app.services import climate, insights, recommendations, soil, vegetation
 
 router = APIRouter(tags=["dashboard"])
 
@@ -13,7 +14,10 @@ def dashboard(s: DataStore = Depends(store)):
     moisture = soil.moisture(s)
     rec = recommendations.recommend(s)
     return {
+        "location": get_settings().site_name,
         "site": rec["site"],
+        "metrics": insights.metrics(s),
+        "risks": insights.risks(s),
         "climate": climate.summary(s),
         "monthly_climate": climate.monthly_climatology(s),
         "soil": soil.profile(s),

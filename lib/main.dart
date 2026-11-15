@@ -53,6 +53,7 @@ class _MainPageState extends State<MainPage> {
     _appState.addListener(() {
       setState(() {});
     });
+    _appState.loadAll();
   }
 
   @override
@@ -123,7 +124,7 @@ class _MainPageState extends State<MainPage> {
         body: Column(
           children: [
             Expanded(child: _buildScreen(_currentIndex)),
-            const AppFooter(),
+            AppFooter(live: _appState.isLive),
           ],
         ),
       ),
@@ -149,9 +150,9 @@ class _MainPageState extends State<MainPage> {
       case 4:
         return CmpScreen(state: _appState);
       case 5:
-        return const SeaScreen();
+        return SeaScreen(state: _appState);
       case 6:
-        return const WhyScreen();
+        return WhyScreen(state: _appState);
       case 7:
         return ChatScreen(state: _appState);
       default:

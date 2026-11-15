@@ -13,6 +13,7 @@ VARIABLES: dict[str, tuple[str, str, str]] = {
     "humidity": ("power_rh2m_pct", "%", "mean"),
     "wind": ("power_wind2m_ms", "m/s", "mean"),
     "solar": ("power_solar_rad_mj_m2_day", "MJ/m²/day", "mean"),
+    "et0": ("et0_mm_day", "mm", "sum"),
     "soil_moisture": ("smap_soil_moisture_am_m3m3", "m³/m³", "mean"),
     "ndvi": ("ndvi_mean", "", "mean"),
 }

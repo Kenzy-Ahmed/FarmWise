@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     data_dir: Path = DATA_DIR
     unified_dataset: Path = DATA_DIR / "Processed_Data" / "FarmWise_Unified_Dataset.csv"
     crop_requirements: Path = DATA_DIR / "Crop_Requirements" / "FarmWise_Crop_Requirements_Complete.csv"
+    rotation_traits: Path = DATA_DIR / "Crop_Requirements" / "FarmWise_Rotation_Crop_Traits.csv"
     aoi_geojson: Path = DATA_DIR / "Documentation" / "AOI" / "El_Zankalon_AOI.geojson"
     scripts_dir: Path = DATA_DIR / "scripts"
 

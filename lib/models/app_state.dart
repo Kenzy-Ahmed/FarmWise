@@ -1,5 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../services/api_client.dart';
+import 'api_models.dart';
+
+enum ApiStatus { loading, online, offline }
 
 class Strategy {
   final String name;
@@ -25,9 +31,124 @@ class Strategy {
     required this.risk,
     required this.why,
   });
+
+  factory Strategy.fromJson(Map<String, dynamic> j) => Strategy(
+        name: j['name'],
+        sequence: List<String>.from(j['sequence']),
+        waterDemand: j['water_demand'],
+        soilBenefit: j['soil_benefit'],
+        nitrogenPotential: j['nitrogen_potential'],
+        erosionReduction: j['erosion_reduction'],
+        climateSuitability: j['climate_suitability'],
+        incomePotential: j['income_potential'],
+        risk: j['risk'],
+        why: j['why'],
+      );
 }
 
 class AppState extends ChangeNotifier {
+  AppState({ApiClient? api}) : api = api ?? ApiClient();
+
+  final ApiClient api;
+
+  // ---- Live data from the FarmWise API (null = not loaded / offline) ----
+  ApiStatus apiStatus = ApiStatus.loading;
+  String? apiError;
+  List<Metric>? metrics;
+  List<Risk>? risks;
+  List<SeasonMonth>? seasonMonths;
+  List<SeasonInsight>? seasonInsights;
+  List<CropRecommendation>? cropRecommendations;
+  List<DataSource>? dataSources;
+  SoilInfo? soil;
+  List<Strategy>? _apiStrategies;
+  Timer? _rotationDebounce;
+
+  bool get isLive => apiStatus == ApiStatus.online;
+
+  String get dataLabel => isLive
+      ? "Live NASA satellite data${metrics != null && metrics!.isNotEmpty ? ' (as of ${metrics!.first.asOf})' : ''}"
+      : apiStatus == ApiStatus.loading
+          ? "Loading satellite data…"
+          : "Demo data (illustrative), backend offline";
+
+  /// Load everything the screens need. Safe to call again to retry.
+  Future<void> loadAll() async {
+    apiStatus = ApiStatus.loading;
+    notifyListeners();
+    try {
+      final results = await Future.wait([
+        api.dashboard(),
+        api.seasons(),
+        api.location(),
+        api.recommendations(),
+      ]);
+      final dash = results[0];
+      final sea = results[1];
+      final loc = results[2];
+      final rec = results[3];
+
+      metrics = (dash['metrics'] as List).map((e) => Metric.fromJson(e)).toList();
+      risks = (dash['risks'] as List).map((e) => Risk.fromJson(e)).toList();
+      soil = SoilInfo.fromJson(dash['soil']);
+      seasonMonths = (sea['months'] as List).map((e) => SeasonMonth.fromJson(e)).toList();
+      seasonInsights = (sea['insights'] as List).map((e) => SeasonInsight.fromJson(e)).toList();
+      dataSources = (loc['data_sources'] as List).map((e) => DataSource.fromJson(e)).toList();
+      cropRecommendations =
+          (rec['recommendations'] as List).map((e) => CropRecommendation.fromJson(e)).toList();
+      location = dash['location'] ?? location;
+      if (soil != null && soilTypes.contains(soil!.textureClass)) {
+        soilType = soil!.textureClass;
+      }
+      apiStatus = ApiStatus.online;
+      apiError = null;
+      notifyListeners();
+      await refreshRotations();
+    } catch (e) {
+      apiStatus = ApiStatus.offline;
+      apiError = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Re-score rotations on the backend (user's rotation vs suggested strategies).
+  Future<void> refreshRotations() async {
+    if (apiStatus == ApiStatus.offline) return;
+    try {
+      final list = await api.rotations(rotation, activePriorities);
+      _apiStrategies = list.map((e) => Strategy.fromJson(e)).toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('rotations failed: $e');
+    }
+  }
+
+  void _scheduleRotationRefresh() {
+    _rotationDebounce?.cancel();
+    _rotationDebounce = Timer(const Duration(milliseconds: 500), refreshRotations);
+  }
+
+  /// Ask FarmWise: backend answer when online, local fallback otherwise.
+  Future<String> ask(String message, String Function(String) fallback) async {
+    if (!isLive) return fallback(message);
+    try {
+      return await api.chat(message, rotation: rotation, priorities: activePriorities);
+    } catch (_) {
+      return fallback(message);
+    }
+  }
+
+  List<String> get activePriorities =>
+      priorities.entries.where((e) => e.value).map((e) => e.key).toList();
+
+  final List<String> soilTypes = ["Clay loam", "Sandy", "Silty", "Loam", "Not sure"];
+
+  @override
+  void dispose() {
+    _rotationDebounce?.cancel();
+    super.dispose();
+  }
+
   Map<String, bool> priorities = {
     'soil': true,
     'water': false,
@@ -116,7 +237,10 @@ void toggleTheme() {
     ]
   ];
 
-  List<Strategy> get strategies {
+  List<Strategy> get strategies => _apiStrategies ?? demoStrategies;
+
+  /// Original illustrative strategies, used when the backend is unreachable.
+  List<Strategy> get demoStrategies {
     List<String> userSeq = rotation
         .split(RegExp(r'→|->|,'))
         .map((e) => e.trim())
@@ -193,6 +317,7 @@ void toggleTheme() {
   void togglePriority(String key) {
     priorities[key] = !(priorities[key] ?? false);
     notifyListeners();
+    // Scores are recomputed locally (calculateScore); no API call needed.
   }
 
   void setLayer(int layer) {
@@ -213,6 +338,6 @@ void toggleTheme() {
   void updateLocation(String val) { location = val; notifyListeners(); }
   void updateArea(String val) { area = val; notifyListeners(); }
   void updateSoil(String val) { soilType = val; notifyListeners(); }
-  void updateRotation(String val) { rotation = val; notifyListeners(); }
+  void updateRotation(String val) { rotation = val; notifyListeners(); _scheduleRotationRefresh(); }
   void updateIrrigation(String val) { irrigation = val; notifyListeners(); }
 }

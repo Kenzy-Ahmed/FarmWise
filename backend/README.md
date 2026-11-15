@@ -28,6 +28,10 @@ backend/
 │   │   ├── soil.py          #   SoilGrids profile, USDA texture class, SMAP moisture
 │   │   ├── vegetation.py    #   MODIS NDVI composites + health status
 │   │   ├── crops.py         #   crop requirements + GAEZ suitability
+│   │   ├── insights.py      #   dashboard metrics + risk indices (drought, heat, erosion…)
+│   │   ├── seasons.py       #   monthly pattern + vulnerable / planting windows
+│   │   ├── rotations.py     #   crop-sequence scoring (uses FarmWise_Rotation_Crop_Traits.csv)
+│   │   ├── chat.py          #   rule-based Q&A over the data (seam for an LLM later)
 │   │   └── recommendations.py  # wraps Data/scripts/{crop_suitability,scoring}.py
 │   ├── schemas/             # Pydantic models = the API contract for the frontend
 │   └── api/routes/          # Thin HTTP layer, one file per domain
@@ -55,7 +59,12 @@ Design choices:
 |---|---|---|
 | GET | `/health` | Status + loaded data range |
 | GET | `/location` | Site name, center, bbox, AOI GeoJSON, data sources |
-| GET | `/dashboard` | **One call for the home screen**: climate, soil, NDVI, moisture, top 3 crops |
+| GET | `/dashboard` | **One call for the dashboard**: metrics, risks, climate, soil, NDVI, moisture, top 3 crops |
+| GET | `/insights` | Dashboard metric cards + 0-100 risk indices (each with its formula in `method`) |
+| GET | `/seasons` | 12-month pattern (rain, temp, ET₀, NDVI, bare/crop) + vulnerable/planting windows |
+| POST | `/rotations` | Score the farmer's rotation vs suggested strategies, e.g. `{"rotation": "Wheat → Maize → Fallow", "priorities": ["soil","res"]}` |
+| GET | `/rotations/crops` | Crops the rotation engine knows |
+| POST | `/chat` | Rule-based assistant that answers with the site's data: `{"message": "Is my land water stressed?"}` |
 | GET | `/climate/summary?start=&end=` | Mean temps, annual rainfall, hottest/coldest month |
 | GET | `/climate/monthly` | 12-month climatology (temp, rain, RH, wind, solar) |
 | GET | `/climate/variables` | Variables available for time series |
@@ -80,15 +89,29 @@ Design choices:
 }
 ```
 
-## Connecting the frontend
+## How the Flutter app uses the API
+
+`lib/services/api_client.dart` talks to the backend; `lib/models/app_state.dart`
+loads everything at startup (`loadAll`) and falls back to the original demo values
+if the backend is unreachable (the status dot turns red and shows **Retry**).
+
+| Screen | Endpoint(s) |
+|---|---|
+| Dashboard | `/dashboard` (metrics, risks), `/recommendations` (best-suited crops) |
+| Land analysis | `/dashboard` → soil profile, layer values; "Get rotation advice" → `/rotations` |
+| Rotation advisor / Compare | `POST /rotations` (re-scored when the rotation text changes; priority weighting is client-side) |
+| Seasons | `/seasons` |
+| Why this? | `/recommendations` (top crop strengths/limits), `/location` (data sources) |
+| Ask FarmWise | `POST /chat` |
+
+Derived values: reference evapotranspiration (ET₀) uses Hargreaves-Samani (FAO-56 eq. 52)
+from NASA POWER temperatures. Rotation indicators combine site climate (temperature fit,
+season rainfall) with crop traits in `Data/Crop_Requirements/FarmWise_Rotation_Crop_Traits.csv`
+(FAO indicative water needs; `income_index` is illustrative). The map heat-grid on the Land
+screen is still illustrative: the data is an area average, not a per-pixel grid.
 
 CORS is open (`*`) by default for the demo. To lock it down, set
-`FARMWISE_CORS_ORIGINS=http://localhost:5173` (see `.env.example`).
-
-```js
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
-const dashboard = await fetch(`${API}/dashboard`).then(r => r.json());
-```
+`FARMWISE_CORS_ORIGINS=http://localhost:8080` (see `.env.example`).
 
 ## Docker
 

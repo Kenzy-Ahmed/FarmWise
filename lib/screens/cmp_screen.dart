@@ -30,6 +30,7 @@ class CmpScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Compare strategies", style: GoogleFonts.bricolageGrotesque(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
+          DataStatusChip(state: state),
           const SizedBox(height: 16),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -81,6 +82,11 @@ class CmpScreen extends StatelessWidget {
               ),
             ),
           ),
+          if (state.isLive)
+            ...st.map((s) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text("${s.name}: ${s.risk}", style: TextStyle(color: textColor, fontSize: 13)),
+                )),
           const NoteCard(text: "Trade-offs: the soil health strategy builds the most nitrogen and organic matter but uses more water than the climate strategy. The climate strategy saves water and handles heat best, but its soil gains are smaller and its market may be narrower. Neither is best everywhere."),
         ],
       ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/app_state.dart';
 import '../widgets/custom_widgets.dart';
 
 class WhyScreen extends StatelessWidget {
-  const WhyScreen({super.key});
+  final AppState state;
+  const WhyScreen({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +23,15 @@ class WhyScreen extends StatelessWidget {
       ["Frost risk", "Chance of freezing temperatures that damage crops."],
     ];
 
+    final high = state.risks?.where((r) => r.level != 'Low').map((r) => r.label.toLowerCase()).toList();
+    final indicators = high != null && high.isNotEmpty
+        ? "Elevated: ${high.join(', ')}. Based on ${state.metrics?.map((m) => m.label.toLowerCase()).join(', ')}."
+        : "Low soil moisture, low rainfall, high heat and water stress.";
+    final datasets = state.dataSources != null
+        ? state.dataSources!.map((d) => d.name).join(', ')
+        : "SMAP, GPM, ECOSTRESS, MODIS/Landsat, POWER (demo values here).";
+    final top = state.cropRecommendations?.isNotEmpty == true ? state.cropRecommendations!.first : null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -34,13 +45,24 @@ class WhyScreen extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                _card("Indicators used", "Low soil moisture, low rainfall, high heat and water stress.", w, cardBg, borderColor, textColor),
-                _card("Datasets", "SMAP, GPM, ECOSTRESS, MODIS/Landsat, POWER (demo values here).", w, cardBg, borderColor, textColor),
-                _card("Crop traits", "Water need, nitrogen fixing, root depth, organic matter, erosion cover.", w, cardBg, borderColor, textColor),
-                _card("Uncertainty", "Demo data, coarse pixels, no soil test, simplified crop model.", w, cardBg, borderColor, textColor),
+                _card("Indicators used", indicators, w, cardBg, borderColor, textColor),
+                _card("Datasets", datasets, w, cardBg, borderColor, textColor),
+                _card("Crop traits", "Water need, nitrogen fixing, temperature range, soil pH, cover and residue (FAO ECOCROP / GAEZ).", w, cardBg, borderColor, textColor),
+                _card("Uncertainty", state.isLive
+                    ? "Satellite pixels are 250 m to ~10 km, soil values are modelled (no lab test), and the crop model is rule-based."
+                    : "Demo data, coarse pixels, no soil test, simplified crop model.", w, cardBg, borderColor, textColor),
               ],
             );
           }),
+          if (top != null) ...[
+            const SizedBox(height: 24),
+            Text("Top crop: ${top.name}", style: GoogleFonts.bricolageGrotesque(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 6),
+            Text(top.summary, style: TextStyle(color: textColor)),
+            const SizedBox(height: 8),
+            ...top.strengths.map((t) => Text("✓ $t", style: TextStyle(color: textColor))),
+            ...top.limitations.map((t) => Text("! $t", style: TextStyle(color: textColor))),
+          ],
           const SizedBox(height: 24),
           Text("Plain-language glossary", style: GoogleFonts.bricolageGrotesque(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
           const SizedBox(height: 12),
