@@ -2,7 +2,26 @@
 import pandas as pd
 
 
-def rank_crops(suitability_df):
+DEFAULT_WEIGHTS = {
+    "temperature": 0.40,
+    "soil": 0.20,
+    "rainfall": 0.20,
+    "water": 0.20,
+}
+
+
+def rank_crops(suitability_df, weights=None):
+    """Score and rank crops.
+
+    ``weights`` is an optional dict with keys temperature/soil/rainfall/water.
+    Missing keys fall back to DEFAULT_WEIGHTS; values are normalised to sum to 1.
+    """
+
+    w = {**DEFAULT_WEIGHTS, **(weights or {})}
+    total = sum(w.values())
+    if total <= 0:
+        raise ValueError("Weights must sum to a positive number")
+    w = {k: v / total for k, v in w.items()}
 
     required_columns = [
         "crop_name",
@@ -43,12 +62,12 @@ def rank_crops(suitability_df):
         min_water / ranked["avg_water_need_mm_season"] * 100
     )
 
-    # 5. Weighted overall score (same original weights)
+    # 5. Weighted overall score (defaults: 0.40 / 0.20 / 0.20 / 0.20)
     ranked["overall_score"] = (
-        ranked["temperature_score"] * 0.40
-        + ranked["soil_score"] * 0.20
-        + ranked["rainfall_score"] * 0.20
-        + ranked["water_score"] * 0.20
+        ranked["temperature_score"] * w["temperature"]
+        + ranked["soil_score"] * w["soil"]
+        + ranked["rainfall_score"] * w["rainfall"]
+        + ranked["water_score"] * w["water"]
     )
 
     # 6. Rank crops

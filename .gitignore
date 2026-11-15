@@ -1,3 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+Thumbs.db
+
+# Large generated data
+Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Detailed.csv
+Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Final.csv
+Data/Processed_Data/MODIS_NDVI/MODIS_NDVI_Summary.csv
+
 # Miscellaneous
 *.class
 *.log

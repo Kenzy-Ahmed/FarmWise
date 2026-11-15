@@ -47,15 +47,23 @@ class _ChatScreenState extends State<ChatScreen> {
     return "I can explain water stress, soil health, pests, or which rotation suits your priorities. Try one of those.";
   }
 
-  void _sendMessage() {
+  bool _waiting = false;
+
+  Future<void> _sendMessage() async {
     String text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _waiting) return;
 
     setState(() {
       _messages.add(ChatMessage(text: text, isUser: true));
-      _messages.add(ChatMessage(text: _getReply(text), isUser: false));
+      _waiting = true;
     });
     _controller.clear();
+    final reply = await widget.state.ask(text, _getReply);
+    if (!mounted) return;
+    setState(() {
+      _messages.add(ChatMessage(text: reply, isUser: false));
+      _waiting = false;
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -82,7 +90,9 @@ class _ChatScreenState extends State<ChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("FarmWise Advisor", style: GoogleFonts.bricolageGrotesque(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
-          Text("A simple rule-based helper using your demo field data. It is not a live AI model.", style: TextStyle(color: mutedColor)),
+          Text(widget.state.isLive
+              ? "A simple rule-based helper that answers with satellite data for your area. It is not a live AI model."
+              : "A simple rule-based helper using your demo field data. It is not a live AI model.", style: TextStyle(color: mutedColor)),
           const SizedBox(height: 16),
           Expanded(
             child: Container(

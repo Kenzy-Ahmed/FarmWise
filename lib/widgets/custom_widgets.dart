@@ -1,5 +1,37 @@
 import 'package:flutter/material.dart';
+import '../models/app_state.dart';
 import '../theme.dart';
+
+/// Small pill showing whether screens show live API data or demo fallbacks.
+class DataStatusChip extends StatelessWidget {
+  final AppState state;
+  const DataStatusChip({super.key, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? const Color(0xFF9AAB9F) : AppTheme.lightMuted;
+    final Color dot = switch (state.apiStatus) {
+      ApiStatus.online => const Color(0xFF3E8E5A),
+      ApiStatus.loading => const Color(0xFFC9892B),
+      ApiStatus.offline => const Color(0xFFB5503C),
+    };
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+        Text('${state.location} · ${state.dataLabel}', style: TextStyle(color: muted, fontSize: 13)),
+        if (state.apiStatus == ApiStatus.offline)
+          TextButton(
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 24)),
+            onPressed: state.loadAll,
+            child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+      ],
+    );
+  }
+}
 
 class CustomProgressBar extends StatelessWidget {
   final double value;
@@ -102,7 +134,8 @@ class NoteCard extends StatelessWidget {
 }
 
 class AppFooter extends StatelessWidget {
-  const AppFooter({super.key});
+  final bool live;
+  const AppFooter({super.key, this.live = false});
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +146,9 @@ class AppFooter extends StatelessWidget {
         border: Border(top: BorderSide(color: isDark ? const Color(0xFF2E3D33) : AppTheme.lightBorder)),
       ),
       child: Text(
-        'FarmWise · built for NASA Space Apps Challenge · All figures shown are labeled demonstration data, not live NASA measurements. Decision support only: validate with soil tests and local agronomists.',
+        live
+            ? 'FarmWise · built for NASA Space Apps Challenge · Figures come from NASA POWER, GPM, SMAP, MODIS, ISRIC SoilGrids and FAO data for the El-Zankalon study area. Decision support only: validate with soil tests and local agronomists.'
+            : 'FarmWise · built for NASA Space Apps Challenge · All figures shown are labeled demonstration data, not live NASA measurements. Decision support only: validate with soil tests and local agronomists.',
         textAlign: TextAlign.center,
         style: TextStyle(color: isDark ? const Color(0xFF9AAB9F) : AppTheme.lightMuted, fontSize: 13),
       ),

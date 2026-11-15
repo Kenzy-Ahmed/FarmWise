@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/app_state.dart';
+import '../widgets/custom_widgets.dart';
 
 class SeaScreen extends StatelessWidget {
-  const SeaScreen({super.key});
+  final AppState state;
+  const SeaScreen({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -13,8 +16,19 @@ class SeaScreen extends StatelessWidget {
     final cardBg = Theme.of(context).cardColor;
 
     final months = ["J","F","M","A","M","J","J","A","S","O","N","D"];
-    final rain = [22,18,14,6,2,0,0,0,1,6,16,22];
-    final tmp = [14,15,18,23,28,31,33,33,30,26,20,15];
+    final live = state.seasonMonths;
+    final rain = live != null ? live.map((m) => m.rainMm.round()).toList() : [22,18,14,6,2,0,0,0,1,6,16,22];
+    final tmp = live != null ? live.map((m) => m.tempMean.round()).toList() : [14,15,18,23,28,31,33,33,30,26,20,15];
+    final tmax = live != null ? live.map((m) => m.tempMax).toList() : tmp.map((t) => t.toDouble()).toList();
+    final bare = live != null ? live.map((m) => m.fieldStatus == 'bare').toList() : List.generate(12, (i) => i >= 5 && i <= 8);
+    final cards = state.seasonInsights != null
+        ? state.seasonInsights!.map((c) => [c.title, c.text]).toList()
+        : [
+            ["Vulnerable", "May–Sep: little rain and heat above 29 °C."],
+            ["Cover crop window", "Oct–Nov, when rain returns and the field sits bare."],
+            ["Rotation windows", "Late Oct for cool-season crops; April for summer crops."],
+          ];
+    final maxRain = rain.reduce((a, b) => a > b ? a : b).clamp(1, 1000);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -22,7 +36,9 @@ class SeaScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Seasonal insights", style: GoogleFonts.bricolageGrotesque(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
-          Text("Typical pattern, Demo data (illustrative, Oct 2026)", style: TextStyle(color: mutedColor)),
+          DataStatusChip(state: state),
+          if (live != null)
+            Text("Typical year: monthly averages 2015–2025 (rain = mean monthly total)", style: TextStyle(color: mutedColor, fontSize: 12)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -40,9 +56,11 @@ class SeaScreen extends StatelessWidget {
                   children: List.generate(12, (i) {
                     double r = rain[i].toDouble();
                     return Expanded(
-                      child: Container(
+                      child: Tooltip(
+                        message: "${months[i]}: ${rain[i]} mm",
+                        child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 1),
-                        height: 20 + r * 3,
+                        height: 20 + r / maxRain * 60,
                         decoration: BoxDecoration(
                           color: r < 5 ? const Color(0xFFE3C27D) : (isDark ? const Color(0xFF3E5A48) : const Color(0xFFA9BFA4)),
                           borderRadius: BorderRadius.circular(4),
@@ -50,6 +68,7 @@ class SeaScreen extends StatelessWidget {
                         alignment: Alignment.bottomCenter,
                         padding: const EdgeInsets.only(bottom: 2),
                         child: Text(months[i], style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)),
+                      ),
                       ),
                     );
                   }),
@@ -65,7 +84,7 @@ class SeaScreen extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(horizontal: 1),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
-                          color: t > 29 ? const Color(0xFFB5503C) : (isDark ? const Color(0xFF223028) : const Color(0xFFE3EBDF)),
+                          color: tmax[i] > 35 ? const Color(0xFFB5503C) : (isDark ? const Color(0xFF223028) : const Color(0xFFE3EBDF)),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         alignment: Alignment.center,
@@ -75,10 +94,10 @@ class SeaScreen extends StatelessWidget {
                   }),
                 ),
                 const SizedBox(height: 16),
-                Text("Field status (current rotation)", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),const SizedBox(height: 8),
+                Text(live != null ? "Field cover (satellite NDVI)" : "Field status (current rotation)", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),const SizedBox(height: 8),
                 Row(
                   children: List.generate(12, (i) {
-                    bool isBare = i >= 5 && i <= 8;
+                    bool isBare = bare[i];
                     return Expanded(
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 1),
@@ -101,11 +120,7 @@ class SeaScreen extends StatelessWidget {
             return Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: [
-                _card("Vulnerable", "May–Sep: little rain and heat above 29 °C.", constraints.maxWidth, cardBg, borderColor, textColor, mutedColor),
-                _card("Cover crop window", "Oct–Nov, when rain returns and the field sits bare.", constraints.maxWidth, cardBg, borderColor, textColor, mutedColor),
-                _card("Rotation windows", "Late Oct for cool-season crops; April for summer crops.", constraints.maxWidth, cardBg, borderColor, textColor, mutedColor),
-              ],
+              children: cards.map((c) => _card(c[0], c[1], constraints.maxWidth, cardBg, borderColor, textColor, mutedColor)).toList(),
             );
           }),
         ],

@@ -22,6 +22,8 @@ class RotScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Rotation advisor", style: GoogleFonts.bricolageGrotesque(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
+          DataStatusChip(state: state),
+          const SizedBox(height: 4),
           Text("What matters most to you?", style: TextStyle(color: mutedColor)),
           const SizedBox(height: 12),
           Wrap(
@@ -110,7 +112,9 @@ class RotScreen extends StatelessWidget {
               );
             },
           ),
-          const NoteCard(text: "Scores come from a transparent weighted average of the indicators above using your chosen priorities. They are rule-based demo estimates, not validated predictions."),
+          NoteCard(text: state.isLive
+              ? "Scores are the average of the indicators matching your priorities. Climate suitability and water demand use 2015–2025 NASA climate for this site; the other indicators come from crop traits. They are rule-based estimates, not validated predictions."
+              : "Scores come from a transparent weighted average of the indicators above using your chosen priorities. They are rule-based demo estimates, not validated predictions."),
         ],
       ),
     );

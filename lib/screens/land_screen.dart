@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import '../models/app_state.dart';
+import '../widgets/custom_widgets.dart';
 
 class LandScreen extends StatelessWidget {
   final AppState state;
@@ -24,6 +25,7 @@ class LandScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Land analysis", style: GoogleFonts.bricolageGrotesque(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
+          DataStatusChip(state: state),
           const SizedBox(height: 16),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -73,7 +75,7 @@ class LandScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Click map to outline field", style: TextStyle(color: mutedColor, fontSize: 12)),
+              Expanded(child: Text(_layerCaption(), style: TextStyle(color: mutedColor, fontSize: 12))),
               TextButton(
                 onPressed: () => state.clearPoints(),
                 child: Text("Clear field", style: TextStyle(color: isDark ? const Color(0xFF8FC3A0) : const Color(0xFF1F3D2C), fontSize: 12, fontWeight: FontWeight.bold)),
@@ -90,6 +92,14 @@ class LandScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (state.soil != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      "Satellite soil profile: ${state.soil!.textureClass}, pH ${state.soil!.ph.toStringAsFixed(1)} (${state.soil!.phClass.toLowerCase()}), organic carbon ${state.soil!.soc.toStringAsFixed(1)} g/kg",
+                      style: TextStyle(color: mutedColor, fontSize: 12),
+                    ),
+                  ),
                 _buildLabel("Location", textColor),
                 TextFormField(
                   initialValue: state.location,
@@ -111,7 +121,7 @@ class LandScreen extends StatelessWidget {
                   dropdownColor: cardBg,
                   style: TextStyle(color: textColor),
                   decoration: _inputDecoration(borderColor),
-                  items: ["Clay loam", "Sandy", "Silty", "Loam", "Not sure"]
+                  items: state.soilTypes
                       .map((s) => DropdownMenuItem(value: s, child: Text(s, style: TextStyle(color: textColor))))
                       .toList(),
                   onChanged: (val) { if (val != null) state.updateSoil(val); },
@@ -140,7 +150,10 @@ class LandScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: onNavigateToRot,
+                    onPressed: () {
+                      state.refreshRotations();
+                      onNavigateToRot();
+                    },
                     child: const Text("Get rotation advice", style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -150,6 +163,20 @@ class LandScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Live value for the selected map layer (AOI average), or the default hint.
+  String _layerCaption() {
+    const keys = ["soil_moisture", "temperature", "rainfall", "ndvi", "water_stress", "erosion"];
+    final key = keys[state.activeLayer];
+    String? value;
+    for (final m in state.metrics ?? const []) {
+      if (m.key == key) value = "${m.label}: ${m.display}";
+    }
+    for (final r in state.risks ?? const []) {
+      if (r.key == key) value = "${r.label}: ${r.value}/100 (${r.level})";
+    }
+    return value == null ? "Click map to outline field" : "$value · area average. Click map to outline field";
   }
 
   Widget _buildLabel(String text, Color textColor) {

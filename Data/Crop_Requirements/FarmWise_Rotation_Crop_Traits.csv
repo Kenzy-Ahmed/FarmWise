@@ -1,0 +1,19 @@
+crop_name,aliases,family,season,temp_opt_min,temp_opt_max,water_need_min_mm,water_need_max_mm,legume,cover_crop,residue_benefit,income_index,waterlogging_sensitive,notes
+Wheat,wheat,Poaceae,winter,15,23,450,650,False,False,True,65,False,ECOCROP temp optimum; FAO indicative seasonal water need
+Barley,barley,Poaceae,winter,15,20,450,650,False,False,True,55,False,FAO indicative water need (barley/oats/wheat); tolerant of salinity and drought
+Faba bean,faba bean;fava bean;broad bean;ful,Fabaceae,winter,18,27,300,500,True,False,False,60,True,Legume; FAO bean water need used as proxy
+Clover,clover;berseem;egyptian clover;clover cover crop;berseem clover,Fabaceae,winter,15,25,500,700,True,True,False,45,True,Egyptian clover (berseem) forage/cover legume; water range approximate
+Chickpea,chickpea;garbanzo,Fabaceae,winter,18,26,300,450,True,False,False,60,True,Legume; drought tolerant; water range approximate
+Dry Pea,pea;dry pea;peas,Fabaceae,winter,10,24,350,500,True,False,False,50,True,ECOCROP / FAO indicative values
+Onion,onion,Amaryllidaceae,winter,13,24,350,550,False,False,False,75,True,FAO indicative water need
+Sugar beet,sugar beet;sugarbeet;beet,Amaranthaceae,winter,15,25,550,750,False,False,False,70,False,FAO indicative water need
+Maize,maize;corn,Poaceae,summer,18,33,500,800,False,False,True,60,False,ECOCROP temp optimum; FAO indicative water need
+Sorghum,sorghum;millet,Poaceae,summer,27,35,450,650,False,False,True,50,False,FAO indicative water need (sorghum/millet); drought tolerant
+Cowpea,cowpea;black-eyed pea,Fabaceae,summer,25,35,305,335,True,True,False,50,False,ECOCROP temp optimum; Sudan field-study water range
+Phaseolus Bean,bean;beans;common bean;phaseolus bean;dry bean,Fabaceae,summer,16,25,300,500,True,False,False,60,True,ECOCROP / FAO indicative values
+Soybean,soybean;soya,Fabaceae,summer,20,30,450,700,True,False,False,60,False,FAO indicative water need
+Cotton,cotton,Malvaceae,summer,22,32,700,1300,False,False,False,80,False,FAO indicative water need
+Rice,rice;wetland rice;paddy,Poaceae,summer,20,30,450,700,False,False,True,70,False,Paddy rice; excludes field preparation and percolation water
+Tomato,tomato,Solanaceae,summer,20,27,400,800,False,False,False,85,True,FAO indicative water need
+Sunflower,sunflower,Asteraceae,summer,20,28,600,1000,False,False,True,55,False,FAO indicative water need
+Fallow,fallow;bare;rest,None,any,0,0,0,0,False,False,False,0,False,Field left bare
